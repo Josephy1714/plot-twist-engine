@@ -16,7 +16,7 @@ Plot Twist Engine is an early multiplayer prototype for 2–6 players. Each pilo
 - Server-side movement validation, fragment collection, exits, and scoring.
 - Live room standings, score totals, and a same-room rematch.
 - Responsive interface for mobile and desktop.
-- A Render Blueprint for a free playtest deployment.
+- Vercel static hosting and serverless API support, with shared room state in Upstash Redis.
 
 ## How to play
 
@@ -58,25 +58,31 @@ node server.js
 
 Open [http://localhost:4173](http://localhost:4173). To play from other devices on the same Wi-Fi, use the host computer's LAN address with port `4173`, for example `http://192.168.1.20:4173`. The hosting computer must remain on and the server process must stay running.
 
-## Deploy to Render
+## Deploy to Vercel
 
-[`render.yaml`](render.yaml) configures a free Node web service in Singapore. The app listens on the `PORT` supplied by the host and exposes `/health` for service health checks.
+[`vercel.json`](vercel.json) places the API Function in Singapore (`sin1`) near the recommended Redis region. Static files are served by Vercel, while [`api/[...path].js`](api/%5B...path%5D.js) handles the room API. Room state is shared through the Upstash Redis REST API, so separate Function instances can read and update the same rooms.
 
-1. Push this repository to a Git provider that your Render account can access.
-2. In Render, create a **Blueprint** from the repository and review the service plan and region before applying it.
-3. Wait for the first deploy, then open the generated `onrender.com` URL and create a room.
-4. Share the URL and room code with players. HTTPS is provided by Render.
+1. Import this repository into your Vercel account. The repository is private, so grant Vercel access to `Josephy1714/plot-twist-engine` when prompted.
+2. Create an Upstash Redis database through the Vercel Marketplace. Choose Singapore (`ap-southeast-1`) when available so the database is close to the Function region.
+3. Confirm that the Vercel project has these environment variables in Preview and Production:
+   - `UPSTASH_REDIS_REST_URL`
+   - `UPSTASH_REDIS_REST_TOKEN`
 
-The free plan is for playtesting. Free web services may sleep when idle and may restart. Room state is held in server memory, so an instance restart or redeploy clears active rooms. Keep to a single service instance: the prototype does not share room state across servers. See [Render's free service limitations](https://render.com/docs/free).
+   The Upstash integration can add them for you. If adding them manually, use the REST URL and token from the Upstash database console. Never commit these values to the repository.
+4. Deploy the project and wait for the build to finish. Open the assigned `vercel.app` URL, create a room, then join from a second browser or device.
+5. Share the URL and room code with other pilots. Rematches use the same room.
+
+Vercel serves the static game without a sleeping web server. Functions can still cold-start after idle periods. Redis is required for rooms to be shared across Function invocations. The prototype keeps room state in one Redis key and expires that key after eight hours without a room-changing request. Keep the Vercel Function and Redis database in the same region for responsive polling. Check the plans and usage limits for both Vercel and Upstash before deployment.
 
 ## Technical overview
 
 - `index.html` contains the responsive interface and browser-side game client.
-- `server.js` serves the app and owns room state, voting, timers, movement checks, scoring, and rematches. The browser polls room state while connected.
-- `package.json` defines the zero-dependency Node start command.
-- `render.yaml` describes the hosted test service.
+- `server.js` contains the shared game rules and a local Node server for same-network playtests.
+- `api/[...path].js` exposes the game API as a Vercel Function and uses Upstash Redis for shared room state.
+- `vercel.json` places the Function in Singapore.
+- `package.json` defines the local Node start command; the game has no Node package dependencies.
 
-Room state is in memory and rooms expire after six hours while inactive. There is no database, identity verification, global score persistence, or anti-cheat system. Do not use this prototype for sensitive information or high-stakes competition.
+Locally, room state stays in memory and rooms expire after six hours while inactive. On Vercel, room state is shared through Redis and room-changing requests refresh an eight-hour storage TTL. There is no account identity, persistent global leaderboard, daily challenge, or anti-cheat system. The scoreboard ranks players only within the current room. Do not use this prototype for sensitive information or high-stakes competition.
 
 ## Playtest checklist
 
