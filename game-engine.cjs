@@ -1,9 +1,7 @@
-const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const PORT = Number(process.env.PORT || 4173);
 const ROOT = __dirname;
 const COLORS = ['#d7ff6b','#81c9ff','#ff8e62','#c3a1ff','#82e6b1','#ff80ab'];
 const MODIFIERS = [
@@ -48,12 +46,5 @@ async function handle(req,res,rooms){const url=new URL(req.url,'http://localhost
   }catch(e){send(res,400,{error:e.message||'Request failed'})}}
 
 function tick(rooms){for(const [c,r] of rooms){if((r.phase==='vote'||r.phase==='play')&&r.epoch){let left=Math.max(0,Math.ceil((r.epoch+(r.phase==='vote'?18000:40000)-Date.now())/1000));r.secondsLeft=left;if(left===0){if(r.phase==='vote')resolveVote(r);else finishRound(r)}}if(Date.now()-r.created>6*60*60*1000&&r.phase!=='play')rooms.delete(c)}}
-
-if(require.main===module){
-  const rooms=new Map();
-  const server=http.createServer((req,res)=>handle(req,res,rooms));
-  setInterval(()=>tick(rooms),500);
-  server.listen(PORT,'0.0.0.0',()=>console.log(`Plot Twist Engine listening on http://localhost:${PORT}`));
-}
 
 module.exports={handle,tick,publicState};

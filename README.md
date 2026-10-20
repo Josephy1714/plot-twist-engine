@@ -53,7 +53,7 @@ Requires Node.js 20 or newer. There are no third-party runtime dependencies.
 ### macOS, Linux, or any shell with Node.js
 
 ```sh
-node server.js
+node local-server.cjs
 ```
 
 Open [http://localhost:4173](http://localhost:4173). To play from other devices on the same Wi-Fi, use the host computer's LAN address with port `4173`, for example `http://192.168.1.20:4173`. The hosting computer must remain on and the server process must stay running.
@@ -62,7 +62,7 @@ Open [http://localhost:4173](http://localhost:4173). To play from other devices 
 
 [`vercel.json`](vercel.json) places the API Function in Singapore (`sin1`) near the recommended Redis region. Static files are served by Vercel, while [`api/[...path].js`](api/%5B...path%5D.js) handles the room API. Room state is shared through the Upstash Redis REST API, so separate Function instances can read and update the same rooms.
 
-1. Import this repository into your Vercel account. The repository is private, so grant Vercel access to `Josephy1714/plot-twist-engine` when prompted.
+1. Import this repository into your Vercel account. If prompted, grant Vercel access to `Josephy1714/plot-twist-engine`.
 2. Create an Upstash Redis database through the Vercel Marketplace. Choose Singapore (`ap-southeast-1`) when available so the database is close to the Function region.
 3. Confirm that the Vercel project has these environment variables in Preview and Production:
    - `UPSTASH_REDIS_REST_URL`
@@ -77,7 +77,7 @@ Vercel serves the static game without a sleeping web server. Functions can still
 ## Technical overview
 
 - `index.html` contains the responsive interface and browser-side game client.
-- `server.js` contains the shared game rules and a local Node server for same-network playtests.
+- `game-engine.cjs` contains the shared game rules. `local-server.cjs` starts the local server for same-network playtests.
 - `api/[...path].js` exposes the game API as a Vercel Function and uses Upstash Redis for shared room state.
 - `vercel.json` places the Function in Singapore.
 - `package.json` defines the local Node start command; the game has no Node package dependencies.
